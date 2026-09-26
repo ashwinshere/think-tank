@@ -1,0 +1,33 @@
+{
+  "name": "thinktank-ai",
+  "version": "0.1.0",
+  "private": true,
+  "description": "ThinkTank AI — learn by thinking, not just by getting answers. Hackathon prototype built with Next.js + Gemini.",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@google/genai": "^0.14.0",
+    "bcryptjs": "^3.0.3",
+    "firebase": "^10.14.1",
+    "firebase-admin": "^12.7.0",
+    "jose": "^6.2.12",
+    "lucide-react": "^0.454.0",
+    "next": "^14.2.15",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/node": "^20.14.9",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "autoprefixer": "^10.4.19",
+    "postcss": "^8.4.39",
+    "tailwindcss": "^3.4.4",
+    "typescript": "^5.5.3"
+  }
+}
