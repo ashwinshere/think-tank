@@ -18,6 +18,7 @@ import {
   Trash2,
   ChevronDown,
   MessageSquare,
+  Users,
 } from "lucide-react";
 import { ApiKeyModal } from "./ApiKeyModal";
 import { AuthModal } from "./AuthModal";
@@ -25,9 +26,11 @@ import { MemoryModal } from "./MemoryModal";
 import { getStoredApiKey } from "@/lib/api";
 import { useAuth } from "@/lib/AuthContext";
 import { useConversations } from "@/lib/ConversationContext";
+import { useCommunity } from "@/lib/CommunityContext";
 
 export type Section =
   | "session"
+  | "community"
   | "team"
   | "debate"
   | "museum"
@@ -38,6 +41,7 @@ export type Section =
 
 const NAV: { id: Section; label: string; icon: any }[] = [
   { id: "session", label: "Learning Session", icon: MessagesSquare },
+  { id: "community", label: "Community", icon: Users },
   { id: "team", label: "AI Peer Team", icon: BrainCircuit },
   { id: "debate", label: "AI Debate", icon: Swords },
   { id: "museum", label: "Mistake Museum", icon: Archive },
@@ -60,6 +64,7 @@ export function Sidebar({
   const [showHistory, setShowHistory] = useState(true);
 
   const { user, logout } = useAuth();
+  const { onlineCount } = useCommunity();
   const {
     conversations,
     activeConversationId,
@@ -101,6 +106,14 @@ export function Sidebar({
                   <Icon size={17} strokeWidth={2} />
                   {label}
                 </span>
+
+                {id === "community" && (
+                  <span className="ml-auto flex items-center gap-1 text-[10px] text-accent-dark font-bold px-2 py-0.5 rounded-full bg-accent-light border border-accent/20">
+                    <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
+                    {onlineCount}
+                  </span>
+                )}
+
                 {id === "session" && user && conversations.length > 0 && (
                   <button
                     type="button"

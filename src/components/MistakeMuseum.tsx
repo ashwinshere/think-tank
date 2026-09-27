@@ -1,13 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { Card, SectionHeader } from "./ui/Card";
 import { Mistake } from "@/lib/types";
 import { loadMistakes, markMistakeCorrected } from "@/lib/storage";
-import { Archive, CheckCircle2 } from "lucide-react";
+import { Archive, CheckCircle2, Share2, Users } from "lucide-react";
+import { useCommunity } from "@/lib/CommunityContext";
+import { useAuth } from "@/lib/AuthContext";
 
 export function MistakeMuseum({ onPractice }: { onPractice?: (topic: string) => void }) {
   const [mistakes, setMistakes] = useState<Mistake[]>([]);
+  const [publishingId, setPublishingId] = useState<string | null>(null);
+  const { createPost } = useCommunity();
+  const { user } = useAuth();
 
   useEffect(() => {
     setMistakes(loadMistakes());
@@ -18,13 +24,48 @@ export function MistakeMuseum({ onPractice }: { onPractice?: (topic: string) => 
     setMistakes(loadMistakes());
   }
 
+  async function shareWithCommunity(m: Mistake) {
+    if (!user) {
+      alert("Please sign in to publish your mistake to the community.");
+      return;
+    }
+    setPublishingId(m.id);
+    try {
+      await createPost({
+        title: `Misconception in ${m.topic}: "${m.misconception}"`,
+        content: `What went wrong: ${m.cause}`,
+        type: "mistake",
+        subject: "DSA",
+        mistakeDetails: {
+          whatWentWrong: m.cause,
+          whatILearned: "Deconstructed the misconception and reviewed edge cases.",
+          relateCount: 1,
+        },
+      });
+      alert("Published to the Community Mistake Museum! +8 Thinking Points awarded.");
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setPublishingId(null);
+    }
+  }
+
   return (
-    <div className="max-w-3xl mx-auto">
-      <SectionHeader
-        eyebrow="Your Learning History"
-        title="Mistake Museum"
-        description="A gentle record of where your reasoning took a wrong turn — and whether you've fixed it since. Mistakes here are progress markers, not report cards."
-      />
+    <div className="max-w-3xl mx-auto space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <SectionHeader
+          eyebrow="Your Learning History"
+          title="Mistake Museum"
+          description="A gentle record of where your reasoning took a wrong turn — and whether you've fixed it since. Mistakes here are progress markers, not report cards."
+        />
+        <Link
+          href="/community/mistakes"
+          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-accent-light text-accent-dark hover:bg-accent/15 border border-accent/25 text-xs font-bold transition self-start sm:self-auto shrink-0"
+        >
+          <Users size={13} />
+          <span>Public Exhibits →</span>
+        </Link>
+      </div>
 
       {mistakes.length === 0 ? (
         <Card className="p-10 text-center">
@@ -61,24 +102,32 @@ export function MistakeMuseum({ onPractice }: { onPractice?: (topic: string) => 
                   {m.status === "corrected" ? "Corrected" : "Needs practice"}
                 </span>
               </div>
-              {m.status !== "corrected" && (
-                <div className="mt-4 flex flex-wrap gap-2">
+              <div className="mt-4 flex flex-wrap items-center gap-2">
+                {m.status !== "corrected" && (
                   <button
                     onClick={() => correct(m.id)}
                     className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full bg-paper border border-line hover:border-accent transition-colors"
                   >
                     <CheckCircle2 size={13} /> I've got this now
                   </button>
-                  {onPractice && (
-                    <button
-                      onClick={() => onPractice(m.topic)}
-                      className="text-xs font-semibold px-3 py-1.5 rounded-full bg-accent-light text-accent-dark border border-accent/25 hover:bg-accent/10 transition-colors"
-                    >
-                      Try a similar problem
-                    </button>
-                  )}
-                </div>
-              )}
+                )}
+                {onPractice && (
+                  <button
+                    onClick={() => onPractice(m.topic)}
+                    className="text-xs font-semibold px-3 py-1.5 rounded-full bg-accent-light text-accent-dark border border-accent/25 hover:bg-accent/10 transition-colors"
+                  >
+                    Try a similar problem
+                  </button>
+                )}
+                <button
+                  onClick={() => shareWithCommunity(m)}
+                  disabled={publishingId === m.id}
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full bg-paper hover:bg-surface border border-line hover:border-accent text-ink transition-colors ml-auto"
+                >
+                  <Share2 size={12} className="text-accent" />
+                  <span>{publishingId === m.id ? "Sharing..." : "Share with Community"}</span>
+                </button>
+              </div>
             </Card>
           ))}
         </div>

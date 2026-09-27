@@ -10,12 +10,14 @@ import { TeachTheAI } from "@/components/TeachTheAI";
 import { NoAIRound } from "@/components/NoAIRound";
 import { ExplainMyWay } from "@/components/ExplainMyWay";
 import { GrowthDashboard } from "@/components/GrowthDashboard";
+import { CommunityFeed } from "@/components/community/CommunityFeed";
+import { CommunitySidebar } from "@/components/community/CommunitySidebar";
 
 export default function Home() {
   const [section, setSection] = useState<Section>("session");
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen bg-paper">
       <Sidebar active={section} onChange={setSection} />
 
       <div className="flex-1 min-w-0">
@@ -23,6 +25,16 @@ export default function Home() {
 
         <main className="px-4 sm:px-6 lg:px-10 py-8 md:py-12">
           {section === "session" && <LearningSession />}
+          {section === "community" && (
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start max-w-7xl mx-auto">
+              <div className="lg:col-span-8 min-w-0">
+                <CommunityFeed />
+              </div>
+              <div className="hidden lg:block lg:col-span-4 sticky top-6">
+                <CommunitySidebar />
+              </div>
+            </div>
+          )}
           {section === "team" && <PeerTeam />}
           {section === "debate" && <DebateMode />}
           {section === "museum" && <MistakeMuseum onPractice={() => setSection("session")} />}
