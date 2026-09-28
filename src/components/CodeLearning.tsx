@@ -60,29 +60,15 @@ const LANGUAGES: SupportedLanguage[] = [
 
 const CODE_EXAMPLES: Record<SupportedLanguage, { label: string; code: string }> = {
   Python: {
-    label: "Linear Regression (ML)",
-    code: `import pandas as pd
-import matplotlib.pyplot as plt
-from sklearn.linear_model import LinearRegression
+    label: "Input & Conditionals",
+    code: `name = input("Enter your name: ")
+age = int(input("Enter your age: "))
 
-data = {"Hours": [1, 2, 3, 4, 5, 6, 7, 8], "Marks": [35, 40, 50, 55, 65, 70, 78, 85]}
-df = pd.DataFrame(data)
-
-# Independent and dependent variables
-x = df[["Hours"]]
-y = df["Marks"]
-
-model = LinearRegression()
-model.fit(x, y)
-
-df["Predicted_Marks"] = model.predict(x)
-print(df)
-print("Intercept:", model.intercept_)
-print("Slope:", model.coef_[0])
-print("R² Score:", model.score(x, y))
-
-plt.scatter(x, y)
-plt.plot(x, df["Predicted_Marks"])`,
+print(f"\\nHello {name}!")
+if age >= 18:
+    print("You are an adult.")
+else:
+    print("You are a minor.")`,
   },
   JavaScript: {
     label: "Array Filter & Map",

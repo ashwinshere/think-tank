@@ -187,6 +187,17 @@ export function mockCodeExplanation(
 export function simulateCodeOutput(code: string, language: string): string {
   const lower = code.toLowerCase();
 
+  // Interactive User Input & Age Condition
+  if (lower.includes("enter your name") || (lower.includes("input(") && lower.includes("age"))) {
+    return `Enter your name: Alex
+Enter your age: 20
+
+Hello Alex!
+You are an adult.
+
+[Process completed with exit code 0]`;
+  }
+
   // Machine Learning / Linear Regression
   if (lower.includes("linearregression") || lower.includes("sklearn") || lower.includes("predicted_marks")) {
     return `   Hours  Marks  Predicted_Marks
@@ -625,6 +636,26 @@ export function explainSingleLine(
       explanation: `Comment note: "${l.replace(/^[#\/\-\*\s]+/, "")}". Ignored during program execution.`,
       why: "Provides explanatory context and documentation for programmers without affecting runtime behavior.",
       important_concept: "Code Comment / Documentation",
+    };
+  }
+
+  // User input and type conversion
+  if (lower.includes("name = input(") || (lower.includes("input(") && lower.includes("name"))) {
+    return {
+      line: lineNum,
+      code: rawLine,
+      explanation: "Prompts the user to enter their name in the terminal and stores the resulting string in variable 'name'.",
+      why: "Allows dynamic runtime interaction by capturing keyboard input from the user.",
+      important_concept: "Standard User Input (String)",
+    };
+  }
+  if (lower.includes("int(input(") || (lower.includes("input(") && lower.includes("age"))) {
+    return {
+      line: lineNum,
+      code: rawLine,
+      explanation: "Prompts for the user's age as text and converts (casts) it into an integer with int() before storing in 'age'.",
+      why: "Input from the terminal is always a string. Numerical comparison (>= 18) requires converting the string into an integer.",
+      important_concept: "Type Casting (str to int)",
     };
   }
 
