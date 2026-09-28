@@ -3,6 +3,7 @@
 import React from "react";
 import { CommunityNav } from "@/components/community/CommunityNav";
 import { MistakeMuseumView } from "@/components/community/MistakeMuseumView";
+import { CommunityAuthGuard } from "@/components/community/CommunityAuthGuard";
 
 export default function MistakesPage() {
   return (
@@ -10,7 +11,9 @@ export default function MistakesPage() {
       <CommunityNav activeTab="community" />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10">
-        <MistakeMuseumView />
+        <CommunityAuthGuard>
+          <MistakeMuseumView />
+        </CommunityAuthGuard>
       </main>
     </div>
   );

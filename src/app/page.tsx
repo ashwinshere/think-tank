@@ -12,6 +12,7 @@ import { ExplainMyWay } from "@/components/ExplainMyWay";
 import { GrowthDashboard } from "@/components/GrowthDashboard";
 import { CommunityFeed } from "@/components/community/CommunityFeed";
 import { CommunitySidebar } from "@/components/community/CommunitySidebar";
+import { CommunityAuthGuard } from "@/components/community/CommunityAuthGuard";
 
 export default function Home() {
   const [section, setSection] = useState<Section>("session");
@@ -26,14 +27,16 @@ export default function Home() {
         <main className="px-4 sm:px-6 lg:px-10 py-8 md:py-12">
           {section === "session" && <LearningSession />}
           {section === "community" && (
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start max-w-7xl mx-auto">
-              <div className="lg:col-span-8 min-w-0">
-                <CommunityFeed />
+            <CommunityAuthGuard>
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start max-w-7xl mx-auto">
+                <div className="lg:col-span-8 min-w-0">
+                  <CommunityFeed />
+                </div>
+                <div className="hidden lg:block lg:col-span-4 sticky top-6">
+                  <CommunitySidebar />
+                </div>
               </div>
-              <div className="hidden lg:block lg:col-span-4 sticky top-6">
-                <CommunitySidebar />
-              </div>
-            </div>
+            </CommunityAuthGuard>
           )}
           {section === "team" && <PeerTeam />}
           {section === "debate" && <DebateMode />}

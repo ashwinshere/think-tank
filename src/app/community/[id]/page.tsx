@@ -4,6 +4,7 @@ import React from "react";
 import { useParams } from "next/navigation";
 import { CommunityNav } from "@/components/community/CommunityNav";
 import { ThreadView } from "@/components/community/ThreadView";
+import { CommunityAuthGuard } from "@/components/community/CommunityAuthGuard";
 
 export default function ThreadPage() {
   const params = useParams();
@@ -14,7 +15,9 @@ export default function ThreadPage() {
       <CommunityNav activeTab="community" />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10">
-        <ThreadView postId={postId} />
+        <CommunityAuthGuard>
+          <ThreadView postId={postId} />
+        </CommunityAuthGuard>
       </main>
     </div>
   );
