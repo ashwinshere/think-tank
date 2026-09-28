@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Sidebar, MobileNav, Section } from "@/components/Sidebar";
 import { LearningSession } from "@/components/LearningSession";
+import { CodeLearning } from "@/components/CodeLearning";
 import { PeerTeam } from "@/components/PeerTeam";
 import { DebateMode } from "@/components/DebateMode";
 import { MistakeMuseum } from "@/components/MistakeMuseum";
@@ -26,6 +27,7 @@ export default function Home() {
 
         <main className="px-4 sm:px-6 lg:px-10 py-8 md:py-12">
           {section === "session" && <LearningSession />}
+          {section === "code" && <CodeLearning />}
           {section === "community" && (
             <CommunityAuthGuard>
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start max-w-7xl mx-auto">

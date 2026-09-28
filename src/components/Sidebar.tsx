@@ -11,6 +11,7 @@ import {
   Target,
   Sparkles,
   LineChart,
+  Code2,
   KeyRound,
   User as UserIcon,
   LogOut,
@@ -30,6 +31,7 @@ import { useCommunity } from "@/lib/CommunityContext";
 
 export type Section =
   | "session"
+  | "code"
   | "community"
   | "team"
   | "debate"
@@ -41,6 +43,7 @@ export type Section =
 
 const NAV: { id: Section; label: string; icon: any }[] = [
   { id: "session", label: "Learning Session", icon: MessagesSquare },
+  { id: "code", label: "Code Learning", icon: Code2 },
   { id: "community", label: "Community", icon: Users },
   { id: "team", label: "AI Peer Team", icon: BrainCircuit },
   { id: "debate", label: "AI Debate", icon: Swords },

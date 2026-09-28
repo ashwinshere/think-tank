@@ -245,3 +245,87 @@ export interface OnlineThinker {
   isThinking?: boolean;
 }
 
+export type SupportedLanguage =
+  | "Python"
+  | "C"
+  | "C++"
+  | "Java"
+  | "JavaScript"
+  | "HTML"
+  | "CSS"
+  | "SQL";
+
+export interface LineExplanation {
+  line: number;
+  code: string;
+  explanation: string;
+  why: string;
+  important_concept?: string;
+}
+
+export interface ConceptUsed {
+  name: string;
+  explanation: string;
+}
+
+export interface CommonMistake {
+  mistake: string;
+  explanation: string;
+  example_bad?: string;
+  example_good?: string;
+}
+
+export interface PracticeTask {
+  title: string;
+  description: string;
+  difficulty: "Beginner" | "Easy" | "Intermediate";
+  concepts: string[];
+  hints: string[];
+  expected_output?: string;
+  reference_solution?: string;
+  solution_explanation?: Array<{
+    line: number;
+    code: string;
+    explanation: string;
+  }>;
+}
+
+export interface CodeExplanationResult {
+  language: string;
+  language_mismatch_warning?: string | null;
+  concept: {
+    title: string;
+    explanation: string;
+  };
+  program_summary: string;
+  program_output?: string;
+  line_by_line: LineExplanation[];
+  execution_flow: string[];
+  concepts_used: ConceptUsed[];
+  common_mistakes: CommonMistake[];
+  practice_task: PracticeTask;
+  usedMock?: boolean;
+}
+
+export interface CodeSolutionFeedback {
+  what_you_did_well: string;
+  what_needs_improvement: string;
+  hint: string;
+  understanding: "Concept Understood" | "Partially Understood" | "Needs More Practice";
+  is_correct: boolean;
+  expected_output?: string;
+  actual_output?: string;
+  usedMock?: boolean;
+}
+
+export interface NextChallengeItem {
+  level: 1 | 2 | 3;
+  level_name: "Level 1 — Beginner" | "Level 2 — Easy" | "Level 3 — Intermediate";
+  title: string;
+  description: string;
+  hints: string[];
+  expected_output?: string;
+  reference_solution?: string;
+}
+
+

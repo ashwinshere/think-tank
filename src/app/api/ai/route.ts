@@ -340,6 +340,58 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ...data, usedMock });
     }
 
+    case "code_explain": {
+      const { code, language = "Auto Detect" } = payload as {
+        code: string;
+        language?: string;
+      };
+
+      const prompt = `Selected Language by User: "${language}"\nCode Snippet:\n\`\`\`\n${code}\n\`\`\`\n\nExplain this code thoroughly for a beginner student. Return a JSON object with: language, language_mismatch_warning, concept { title, explanation }, program_summary, line_by_line [{ line, code, explanation, why, important_concept }], execution_flow (string array), concepts_used [{ name, explanation }], common_mistakes [{ mistake, explanation, example_bad, example_good }], practice_task { title, description, difficulty, concepts, hints, reference_solution, solution_explanation [{ line, code, explanation }] }`;
+
+      const { data, usedMock } = await safe(
+        () =>
+          generateJSON<any>(
+            `${ORCHESTRATOR_NOTE}\nYou are an expert programming tutor for beginner engineering students. Return strict JSON.`,
+            prompt,
+            apiKey
+          ),
+        () => {
+          const { mockCodeExplanation } = require("@/lib/mockCodeExplainer");
+          return mockCodeExplanation(code, language);
+        },
+        apiKey
+      );
+
+      return NextResponse.json({ ...data, usedMock });
+    }
+
+    case "code_evaluate": {
+      const { student_code, task_description, original_concept, language = "Python" } = payload as {
+        student_code: string;
+        task_description: string;
+        original_concept: string;
+        language?: string;
+      };
+
+      const prompt = `Language: "${language}"\nOriginal Concept: "${original_concept}"\nTask Assigned: "${task_description}"\nStudent's Submitted Solution:\n\`\`\`\n${student_code}\n\`\`\`\n\nEvaluate constructively. Return JSON: { what_you_did_well, what_needs_improvement, hint, understanding ("Concept Understood"|"Partially Understood"|"Needs More Practice"), is_correct (boolean) }`;
+
+      const { data, usedMock } = await safe(
+        () =>
+          generateJSON<any>(
+            `${ORCHESTRATOR_NOTE}\nYou are a warm, constructive programming tutor evaluating student code. Return strict JSON.`,
+            prompt,
+            apiKey
+          ),
+        () => {
+          const { mockCodeEvaluation } = require("@/lib/mockCodeExplainer");
+          return mockCodeEvaluation(student_code, task_description, language);
+        },
+        apiKey
+      );
+
+      return NextResponse.json({ ...data, usedMock });
+    }
+
     default:
       return NextResponse.json({ error: "Unknown action" }, { status: 400 });
   }
