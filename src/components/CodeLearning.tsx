@@ -30,6 +30,13 @@ import {
   Pause,
   Copy,
   ExternalLink,
+  History,
+  Clock,
+  Plus,
+  Search,
+  Cloud,
+  X,
+  FileCode,
 } from "lucide-react";
 import { Card, SectionHeader } from "./ui/Card";
 import {
@@ -37,6 +44,7 @@ import {
   CodeExplanationResult,
   CodeSolutionFeedback,
   NextChallengeItem,
+  CodeSessionDetail,
 } from "@/lib/types";
 import { getStoredApiKey } from "@/lib/api";
 import {
@@ -46,6 +54,8 @@ import {
   simulateStudentSolutionOutput,
   mockCodeEvaluation,
 } from "@/lib/mockCodeExplainer";
+import { useCodeSessions } from "@/lib/CodeSessionContext";
+import { useAuth } from "@/lib/AuthContext";
 
 const LANGUAGES: SupportedLanguage[] = [
   "Python",
@@ -160,11 +170,30 @@ HAVING COUNT(employee_id) > 2;`,
 };
 
 export function CodeLearning() {
+  const { user } = useAuth();
+  const {
+    codeSessions,
+    activeCodeSessionId,
+    saveCodeSession,
+    loadCodeSessionById,
+    deleteCodeSession,
+    startNewCodeSession,
+    newSessionSignal,
+    loading: sessionsLoading,
+  } = useCodeSessions();
+
   const [language, setLanguage] = useState<SupportedLanguage | "Auto Detect">("Python");
   const [code, setCode] = useState(CODE_EXAMPLES.Python.code);
   const [loading, setLoading] = useState(false);
   const [running, setRunning] = useState(false);
   const [explanation, setExplanation] = useState<CodeExplanationResult | null>(null);
+
+  // History Modal state
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+  const [historySearch, setHistorySearch] = useState("");
+  const [historyLangFilter, setHistoryLangFilter] = useState<string>("All");
+  const [isSavingSession, setIsSavingSession] = useState(false);
+  const [lastSavedTime, setLastSavedTime] = useState<string | null>(null);
 
   // Console Output state
   const [output, setOutput] = useState<string>("");
@@ -192,6 +221,60 @@ export function CodeLearning() {
   const [activeChallengeLevel, setActiveChallengeLevel] = useState<1 | 2 | 3>(1);
   const [challenges, setChallenges] = useState<NextChallengeItem[]>([]);
   const [copiedOutput, setCopiedOutput] = useState(false);
+
+  // Track session load from activeCodeSessionId
+  useEffect(() => {
+    let isMounted = true;
+    if (!activeCodeSessionId) return;
+
+    const fetchSession = async () => {
+      const sess = await loadCodeSessionById(activeCodeSessionId);
+      if (sess && isMounted) {
+        setCode(sess.code || "");
+        setLanguage((sess.language as SupportedLanguage) || "Python");
+        setExplanation(sess.explanation || null);
+        setOutput(sess.output || "");
+        setOutputStatus(sess.output ? "success" : "idle");
+        setStudentCode(sess.studentCode || "");
+        setStudentOutput(sess.studentOutput || "");
+        setStudentOutputStatus(sess.isCorrect ? "matched" : sess.studentOutput ? "mismatched" : "idle");
+        setFeedback(sess.feedback || null);
+        setSelectedLineNumber(1);
+        setShowSolution(false);
+        setShowHints(false);
+
+        if (sess.explanation?.concept?.title) {
+          const prog = getDifficultyProgression(sess.explanation.concept.title, sess.explanation.language);
+          setChallenges(prog);
+        }
+        setLastSavedTime(new Date(sess.updatedAt || Date.now()).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }));
+      }
+    };
+
+    fetchSession();
+    return () => {
+      isMounted = false;
+    };
+  }, [activeCodeSessionId, loadCodeSessionById]);
+
+  // Handle new session signal (reset to clean state)
+  useEffect(() => {
+    if (newSessionSignal > 0) {
+      setLanguage("Python");
+      setCode(CODE_EXAMPLES.Python.code);
+      setExplanation(null);
+      setOutput("");
+      setOutputStatus("idle");
+      setStudentCode("");
+      setStudentOutput("");
+      setStudentOutputStatus("idle");
+      setFeedback(null);
+      setSelectedLineNumber(1);
+      setShowSolution(false);
+      setShowHints(false);
+      setLastSavedTime(null);
+    }
+  }, [newSessionSignal]);
 
   const codeLines = code ? code.split("\n") : [""];
   const totalLines = Math.max(1, codeLines.length);
@@ -256,6 +339,7 @@ export function CodeLearning() {
     setStudentCode("");
     setShowSolution(false);
     setSelectedLineNumber(1);
+    setLastSavedTime(null);
   };
 
   const handleRunCode = () => {
@@ -307,6 +391,27 @@ export function CodeLearning() {
       const prog = getDifficultyProgression(data.concept.title, data.language);
       setChallenges(prog);
       setActiveChallengeLevel(1);
+
+      // Auto-save session to Firebase Firestore if logged in
+      if (user) {
+        setIsSavingSession(true);
+        const resolvedLang = (data.language as SupportedLanguage) || (language === "Auto Detect" ? "Python" : language);
+        const sessionTitle = `${resolvedLang}: ${data.concept.title || "Code Learning"}`;
+        await saveCodeSession({
+          id: activeCodeSessionId || undefined,
+          title: sessionTitle,
+          language: resolvedLang,
+          code,
+          explanation: data,
+          output: programOut,
+          studentCode: "",
+          studentOutput: "",
+          feedback: null,
+          isCorrect: false,
+        });
+        setLastSavedTime(new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }));
+        setIsSavingSession(false);
+      }
     } catch (err) {
       console.error("Error explaining code:", err);
       const fallbackOut = simulateCodeOutput(code, language);
@@ -386,6 +491,20 @@ export function CodeLearning() {
       } else {
         setStudentOutputStatus("mismatched");
       }
+
+      // Persist student practice progress to Firestore
+      if (user && activeCodeSessionId) {
+        setIsSavingSession(true);
+        await saveCodeSession({
+          id: activeCodeSessionId,
+          studentCode,
+          studentOutput: actual,
+          feedback: data,
+          isCorrect: data.is_correct,
+        });
+        setLastSavedTime(new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }));
+        setIsSavingSession(false);
+      }
     } catch (err) {
       console.error("Error evaluating solution:", err);
       const fallback = mockCodeEvaluation(
@@ -440,14 +559,273 @@ export function CodeLearning() {
     setTimeout(() => setCopiedOutput(false), 2000);
   };
 
+  // Filtered sessions for the history dialog
+  const filteredSessions = useMemo(() => {
+    return codeSessions.filter((s) => {
+      const matchesSearch =
+        !historySearch ||
+        s.title.toLowerCase().includes(historySearch.toLowerCase()) ||
+        s.language.toLowerCase().includes(historySearch.toLowerCase());
+      const matchesLang =
+        historyLangFilter === "All" ||
+        s.language.toLowerCase() === historyLangFilter.toLowerCase();
+      return matchesSearch && matchesLang;
+    });
+  }, [codeSessions, historySearch, historyLangFilter]);
+
   return (
     <div className="max-w-7xl mx-auto space-y-8 animate-fadeUp">
-      {/* Header */}
-      <SectionHeader
-        eyebrow="Interactive AI Code Explainer &amp; Practice"
-        title="Code Learning Mode"
-        description="Paste any code snippet to explore line-by-line step explanations beside your code console, inspect terminal outputs, and build deep programming understanding."
-      />
+      {/* Header with Quick Action Bar */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <SectionHeader
+          eyebrow="Interactive AI Code Explainer &amp; Practice"
+          title="Code Learning Mode"
+          description="Paste any code snippet to explore line-by-line step explanations beside your code console, inspect terminal outputs, and build deep programming understanding."
+        />
+
+        {/* Action Controls: New Code, History, Cloud Sync Status */}
+        <div className="flex items-center gap-2.5 shrink-0 self-start md:self-auto">
+          {/* Cloud Sync Status Indicator */}
+          {user && (
+            <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-line bg-surface/80 text-xs text-subink font-medium shadow-sm">
+              {isSavingSession ? (
+                <>
+                  <Loader2 size={13} className="animate-spin text-accent-dark" />
+                  <span className="text-accent-dark">Syncing...</span>
+                </>
+              ) : lastSavedTime ? (
+                <>
+                  <CheckCircle2 size={14} className="text-emerald-500" />
+                  <span>Saved at {lastSavedTime}</span>
+                </>
+              ) : (
+                <>
+                  <Cloud size={14} className="text-subink" />
+                  <span>Cloud Sync Ready</span>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* History Drawer Trigger Button */}
+          <button
+            type="button"
+            onClick={() => setIsHistoryModalOpen(true)}
+            className="flex items-center gap-2 px-3.5 py-2 rounded-xl border border-line bg-surface hover:bg-paper hover:border-line/80 text-xs font-semibold text-ink transition shadow-sm"
+          >
+            <History size={15} className="text-accent-dark" />
+            <span>History</span>
+            {codeSessions.length > 0 && (
+              <span className="px-1.5 py-0.5 rounded-full bg-accent-light text-[10px] font-bold text-accent-dark">
+                {codeSessions.length}
+              </span>
+            )}
+          </button>
+
+          {/* New Code Button */}
+          <button
+            type="button"
+            onClick={() => {
+              startNewCodeSession();
+            }}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-accent hover:bg-accent/90 text-white text-xs font-semibold shadow-sm transition active:scale-95"
+          >
+            <Plus size={15} />
+            <span>New Code</span>
+          </button>
+        </div>
+      </div>
+
+      {/* ================= HISTORY MODAL ================= */}
+      {isHistoryModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
+          <div className="relative w-full max-w-2xl bg-surface border border-line rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] animate-scaleUp">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-line bg-surface/90">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-accent-light text-accent-dark flex items-center justify-center">
+                  <History size={18} />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-ink">Code Learning History</h3>
+                  <p className="text-xs text-subink">
+                    {user ? `${codeSessions.length} sessions saved to Firebase` : "Sign in to save and sync history"}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsHistoryModalOpen(false)}
+                className="w-8 h-8 rounded-xl flex items-center justify-center text-subink hover:text-ink hover:bg-paper transition"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Search & Language Filter Bar */}
+            <div className="p-4 border-b border-line bg-paper/50 space-y-3">
+              <div className="relative">
+                <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-subink" />
+                <input
+                  type="text"
+                  placeholder="Search previous code lessons, concepts, or languages..."
+                  value={historySearch}
+                  onChange={(e) => setHistorySearch(e.target.value)}
+                  className="w-full pl-9 pr-4 py-2 rounded-xl border border-line bg-surface text-xs font-medium text-ink focus:outline-none focus:border-accent"
+                />
+              </div>
+
+              {/* Filter Pills */}
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+                {["All", ...LANGUAGES].map((lang) => (
+                  <button
+                    key={lang}
+                    onClick={() => setHistoryLangFilter(lang)}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition shrink-0 ${
+                      historyLangFilter === lang
+                        ? "bg-accent text-white shadow-sm"
+                        : "bg-surface border border-line text-subink hover:text-ink"
+                    }`}
+                  >
+                    {lang}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* History Sessions List */}
+            <div className="p-4 overflow-y-auto space-y-3 flex-1">
+              {sessionsLoading ? (
+                <div className="py-12 flex flex-col items-center justify-center text-subink gap-2">
+                  <Loader2 size={24} className="animate-spin text-accent-dark" />
+                  <span className="text-xs font-medium">Loading your code sessions...</span>
+                </div>
+              ) : !user ? (
+                <div className="py-12 px-6 text-center space-y-3">
+                  <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto">
+                    <AlertTriangle size={24} />
+                  </div>
+                  <h4 className="text-sm font-bold text-ink">Sign in to enable Cloud History</h4>
+                  <p className="text-xs text-subink max-w-sm mx-auto">
+                    Log in with your account to automatically save your code explanations, line-by-line notes, and practice tasks in Firebase.
+                  </p>
+                </div>
+              ) : filteredSessions.length === 0 ? (
+                <div className="py-12 text-center space-y-3">
+                  <div className="w-12 h-12 rounded-2xl bg-paper text-subink flex items-center justify-center mx-auto">
+                    <FileCode size={24} />
+                  </div>
+                  <h4 className="text-sm font-semibold text-ink">No sessions found</h4>
+                  <p className="text-xs text-subink">
+                    {historySearch || historyLangFilter !== "All"
+                      ? "Try clearing your search query or filters."
+                      : "Explain any code to automatically save it in your history."}
+                  </p>
+                </div>
+              ) : (
+                filteredSessions.map((sess) => {
+                  const isActive = activeCodeSessionId === sess.id;
+                  const formattedDate = new Date(sess.updatedAt).toLocaleDateString(undefined, {
+                    month: "short",
+                    day: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  });
+
+                  return (
+                    <div
+                      key={sess.id}
+                      className={`p-3.5 rounded-2xl border transition flex items-center justify-between gap-3 group ${
+                        isActive
+                          ? "border-accent bg-accent-light/30 shadow-sm"
+                          : "border-line bg-surface hover:bg-paper hover:border-line/80"
+                      }`}
+                    >
+                      <div
+                        className="flex-1 min-w-0 cursor-pointer"
+                        onClick={() => {
+                          loadCodeSessionById(sess.id);
+                          setIsHistoryModalOpen(false);
+                        }}
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-slate-800 text-slate-200">
+                            {sess.language}
+                          </span>
+                          <h4 className="text-xs font-bold text-ink truncate group-hover:text-accent-dark transition">
+                            {sess.title}
+                          </h4>
+                          {sess.isCorrect && (
+                            <span className="px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200 text-[10px] font-bold flex items-center gap-1">
+                              <CheckCircle2 size={11} /> Solved
+                            </span>
+                          )}
+                        </div>
+
+                        {sess.codeSnippet && (
+                          <pre className="text-[11px] font-mono text-subink truncate bg-paper/80 px-2 py-1 rounded-lg border border-line/60">
+                            {sess.codeSnippet}
+                          </pre>
+                        )}
+
+                        <div className="flex items-center gap-2 mt-1.5 text-[10px] text-subink">
+                          <Clock size={11} />
+                          <span>{formattedDate}</span>
+                          {isActive && (
+                            <span className="text-accent-dark font-bold ml-1">• Active Session</span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            loadCodeSessionById(sess.id);
+                            setIsHistoryModalOpen(false);
+                          }}
+                          className="px-3 py-1.5 rounded-xl bg-accent text-white text-xs font-semibold hover:bg-accent/90 transition shadow-sm"
+                        >
+                          Load
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteCodeSession(sess.id);
+                          }}
+                          className="w-8 h-8 rounded-xl flex items-center justify-center text-subink hover:text-rose-500 hover:bg-rose-50 transition"
+                          title="Delete session"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex items-center justify-between px-6 py-3 border-t border-line bg-paper/80 text-xs text-subink">
+              <span>{filteredSessions.length} sessions listed</span>
+              <button
+                type="button"
+                onClick={() => {
+                  startNewCodeSession();
+                  setIsHistoryModalOpen(false);
+                }}
+                className="text-xs font-semibold text-accent-dark hover:underline flex items-center gap-1"
+              >
+                <Plus size={13} />
+                <span>Start New Blank Session</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Main Dual-Pane Section: Left = Code + Output Console, Right = Step-by-Step Explanation */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">

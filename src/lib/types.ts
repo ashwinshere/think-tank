@@ -328,4 +328,26 @@ export interface NextChallengeItem {
   reference_solution?: string;
 }
 
+export interface CodeSessionSummary {
+  id: string;
+  title: string;
+  language: string;
+  conceptTitle?: string;
+  codeSnippet?: string;
+  createdAt: string;
+  updatedAt: string;
+  isCorrect?: boolean;
+  hasSolution?: boolean;
+}
+
+export interface CodeSessionDetail extends CodeSessionSummary {
+  code: string;
+  output?: string;
+  explanation?: CodeExplanationResult | null;
+  studentCode?: string;
+  studentOutput?: string;
+  feedback?: CodeSolutionFeedback | null;
+}
+
+
 

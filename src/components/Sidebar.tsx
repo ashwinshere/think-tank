@@ -28,6 +28,7 @@ import { getStoredApiKey } from "@/lib/api";
 import { useAuth } from "@/lib/AuthContext";
 import { useConversations } from "@/lib/ConversationContext";
 import { useCommunity } from "@/lib/CommunityContext";
+import { useCodeSessions } from "@/lib/CodeSessionContext";
 
 export type Section =
   | "session"
@@ -65,6 +66,7 @@ export function Sidebar({
   const [openAuth, setOpenAuth] = useState(false);
   const [openMemory, setOpenMemory] = useState(false);
   const [showHistory, setShowHistory] = useState(true);
+  const [showCodeHistory, setShowCodeHistory] = useState(true);
 
   const { user, logout } = useAuth();
   const { onlineCount } = useCommunity();
@@ -74,6 +76,14 @@ export function Sidebar({
     setActiveConversationId,
     deleteConversation,
   } = useConversations();
+
+  const {
+    codeSessions,
+    activeCodeSessionId,
+    setActiveCodeSessionId,
+    deleteCodeSession,
+    startNewCodeSession,
+  } = useCodeSessions();
 
   const hasKey = Boolean(getStoredApiKey());
 
@@ -133,6 +143,23 @@ export function Sidebar({
                     />
                   </button>
                 )}
+
+                {id === "code" && user && codeSessions.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowCodeHistory(!showCodeHistory);
+                    }}
+                    className="p-1 hover:text-ink text-subink/80 transition"
+                    title="Toggle code history"
+                  >
+                    <ChevronDown
+                      size={14}
+                      className={`transform transition-transform ${showCodeHistory ? "rotate-180" : ""}`}
+                    />
+                  </button>
+                )}
               </button>
 
               {/* Nested conversation list for Learning Session */}
@@ -177,6 +204,59 @@ export function Sidebar({
                           }}
                           className="opacity-0 group-hover:opacity-100 p-0.5 text-subink hover:text-peer-critic transition shrink-0"
                           title="Delete chat"
+                        >
+                          <Trash2 size={11} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Nested code session list for Code Learning */}
+              {id === "code" && user && showCodeHistory && codeSessions.length > 0 && (
+                <div className="my-1.5 ml-4 pl-3 border-l border-line/80 space-y-1">
+                  <div className="flex items-center justify-between py-1 pr-1">
+                    <span className="text-[10px] uppercase font-bold text-subink tracking-wider">
+                      Code History
+                    </span>
+                    <button
+                      onClick={() => {
+                        startNewCodeSession();
+                        onChange("code");
+                      }}
+                      className="inline-flex items-center gap-1 text-[10px] text-accent-dark font-semibold hover:underline"
+                    >
+                      <Plus size={11} /> New Code
+                    </button>
+                  </div>
+                  <div className="max-h-36 overflow-y-auto space-y-0.5 pr-1">
+                    {codeSessions.slice(0, 10).map((sess) => (
+                      <div
+                        key={sess.id}
+                        className={`group flex items-center justify-between px-2 py-1.5 rounded-lg text-xs transition cursor-pointer ${
+                          activeCodeSessionId === sess.id
+                            ? "bg-paper text-accent-dark font-medium border border-line"
+                            : "text-subink hover:bg-paper hover:text-ink"
+                        }`}
+                        onClick={() => {
+                          setActiveCodeSessionId(sess.id);
+                          onChange("code");
+                        }}
+                      >
+                        <span className="truncate flex items-center gap-1.5">
+                          <span className="text-[9px] font-bold px-1 rounded bg-accent-light text-accent-dark shrink-0">
+                            {sess.language.slice(0, 3)}
+                          </span>
+                          <span className="truncate">{sess.title || "Untitled Code"}</span>
+                        </span>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteCodeSession(sess.id);
+                          }}
+                          className="opacity-0 group-hover:opacity-100 p-0.5 text-subink hover:text-peer-critic transition shrink-0"
+                          title="Delete session"
                         >
                           <Trash2 size={11} />
                         </button>
