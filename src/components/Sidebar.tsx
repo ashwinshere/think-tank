@@ -109,11 +109,10 @@ export function Sidebar({
             <div key={id}>
               <button
                 onClick={() => onChange(id)}
-                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-colors text-left ${
-                  active === id
+                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-colors text-left ${active === id
                     ? "bg-accent-light text-accent-dark font-semibold"
                     : "text-subink hover:bg-paper hover:text-ink"
-                }`}
+                  }`}
               >
                 <span className="flex items-center gap-3">
                   <Icon size={17} strokeWidth={2} />
@@ -183,11 +182,10 @@ export function Sidebar({
                     {conversations.slice(0, 10).map((conv) => (
                       <div
                         key={conv.id}
-                        className={`group flex items-center justify-between px-2 py-1.5 rounded-lg text-xs transition cursor-pointer ${
-                          activeConversationId === conv.id
+                        className={`group flex items-center justify-between px-2 py-1.5 rounded-lg text-xs transition cursor-pointer ${activeConversationId === conv.id
                             ? "bg-paper text-accent-dark font-medium border border-line"
                             : "text-subink hover:bg-paper hover:text-ink"
-                        }`}
+                          }`}
                         onClick={() => {
                           setActiveConversationId(conv.id);
                           onChange("session");
@@ -234,11 +232,10 @@ export function Sidebar({
                     {codeSessions.slice(0, 10).map((sess) => (
                       <div
                         key={sess.id}
-                        className={`group flex items-center justify-between px-2 py-1.5 rounded-lg text-xs transition cursor-pointer ${
-                          activeCodeSessionId === sess.id
+                        className={`group flex items-center justify-between px-2 py-1.5 rounded-lg text-xs transition cursor-pointer ${activeCodeSessionId === sess.id
                             ? "bg-paper text-accent-dark font-medium border border-line"
                             : "text-subink hover:bg-paper hover:text-ink"
-                        }`}
+                          }`}
                         onClick={() => {
                           setActiveCodeSessionId(sess.id);
                           onChange("code");
@@ -317,18 +314,7 @@ export function Sidebar({
           )}
 
           {/* AI Model Setting Button */}
-          <button
-            onClick={() => setOpenSettings(true)}
-            className="w-full flex items-center justify-between px-3 py-2 rounded-xl border border-line bg-paper/60 hover:bg-paper hover:border-accent text-xs font-medium text-ink transition"
-          >
-            <span className="flex items-center gap-2">
-              <KeyRound size={14} className="text-accent-dark" />
-              AI Model Engine
-            </span>
-            <span className="text-[10px] uppercase font-semibold text-accent-dark px-2 py-0.5 rounded-full bg-accent-light">
-              {hasKey ? "Live Gemini" : "Smart Mock"}
-            </span>
-          </button>
+
         </div>
       </aside>
 
@@ -360,9 +346,8 @@ export function MobileNav({
               <button
                 key={id}
                 onClick={() => onChange(id)}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-medium whitespace-nowrap ${
-                  active === id ? "bg-accent-light text-accent-dark font-semibold" : "text-subink"
-                }`}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-medium whitespace-nowrap ${active === id ? "bg-accent-light text-accent-dark font-semibold" : "text-subink"
+                  }`}
               >
                 <Icon size={14} />
                 {label}

@@ -306,13 +306,7 @@ export function LearningSession() {
               New Chat
             </button>
           )}
-          <button
-            onClick={() => setShowKeyModal(true)}
-            className="hidden sm:inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border border-line bg-paper hover:border-accent text-ink transition shrink-0"
-          >
-            <KeyRound size={13} className="text-accent-dark" />
-            {getStoredApiKey() ? "⚡ Live AI" : "🧠 Smart Mock"}
-          </button>
+
         </div>
       </div>
 
